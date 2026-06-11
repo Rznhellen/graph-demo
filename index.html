@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge Graphs — An Introduction</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --cyan:#00d4ff;--purple:#a855f7;--green:#10b981;
+  --amber:#f59e0b;--pink:#ec4899;--bg:#03030f;
+}
+html{scroll-behavior:auto}
+body{background:var(--bg);color:#fff;font-family:'Space Grotesk',system-ui,sans-serif;overflow-x:hidden}
+
+#canvas-wrap{position:fixed;inset:0;z-index:0}
+canvas{display:block;width:100%;height:100%}
+#scroll-driver{position:relative;height:1100vh;z-index:1;pointer-events:none}
+
+#overlay{position:fixed;inset:0;z-index:10;pointer-events:none;overflow:hidden}
+
+/* ── Corners ── */
+.corner{position:absolute;width:50px;height:50px;opacity:.35}
+.corner-tl{top:1.5rem;left:1.5rem;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner-tr{top:1.5rem;right:1.5rem;border-top:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.corner-bl{bottom:2.5rem;left:1.5rem;border-bottom:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner-br{bottom:2.5rem;right:1.5rem;border-bottom:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+
+/* ── Status bar ── */
+#status-bar{
+  position:absolute;bottom:0;left:0;right:0;height:34px;
+  background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;padding:0 1.5rem;gap:2rem;
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.3);
+  opacity:0
+}
+.s-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:sdot 2s infinite}
+@keyframes sdot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Scanlines ── */
+#scanlines{
+  position:absolute;inset:0;pointer-events:none;z-index:100;
+  background:repeating-linear-gradient(transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px)
+}
+#vignette{
+  position:absolute;inset:0;pointer-events:none;z-index:5;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.75) 100%)
+}
+
+/* ── Hero ── */
+#hero{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:90vw}
+#hero .eyebrow{
+  font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--cyan);opacity:0;margin-bottom:1.5rem
+}
+#hero h1{
+  font-size:clamp(3.5rem,9vw,8rem);font-weight:700;line-height:.95;opacity:0;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--purple) 50%,var(--pink) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+#hero .sub{font-size:clamp(1rem,2vw,1.35rem);font-weight:300;color:rgba(255,255,255,.55);opacity:0;margin-top:1.5rem}
+#hero .hint{
+  margin-top:3rem;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;
+  color:rgba(255,255,255,.25);opacity:0;display:flex;align-items:center;justify-content:center;gap:.75rem
+}
+#hero .hint::before,#hero .hint::after{content:'';flex:1;max-width:60px;height:1px;background:rgba(255,255,255,.1)}
+
+/* ── Progress nav ── */
+#nav-dots{
+  position:absolute;right:1.5rem;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:10px;opacity:0
+}
+.nav-dot{
+  width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);
+  transition:background .3s,transform .3s,box-shadow .3s;cursor:pointer
+}
+.nav-dot.active{background:var(--cyan);transform:scale(1.6);box-shadow:0 0 10px var(--cyan)}
+
+/* ── Section label ── */
+#section-badge{
+  position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);
+  text-align:center;opacity:0
+}
+#section-badge .sb-num{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.3);letter-spacing:.2em}
+#section-badge .sb-name{font-size:.9rem;font-weight:600;color:rgba(255,255,255,.7);margin-top:.15rem}
+
+/* ── Paper ── */
+#paper-wrap{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) perspective(1400px) rotateX(6deg) rotateY(-10deg);
+  opacity:0
+}
+#paper{
+  width:min(640px,88vw);padding:3rem 3.5rem;
+  background:linear-gradient(160deg,#fdf8ec 0%,#f5f0e0 100%);
+  color:#1a1a1a;border-radius:3px;
+  box-shadow:0 40px 100px rgba(0,0,0,.7),0 4px 8px rgba(0,0,0,.4),inset 0 0 0 1px rgba(0,0,0,.06);
+  font-family:'Georgia',serif;font-size:1.1rem;line-height:1.95;position:relative;
+}
+#paper::before{
+  content:'';position:absolute;inset:0;border-radius:3px;
+  background:repeating-linear-gradient(transparent,transparent 38.1px,rgba(100,140,200,.08) 38.1px,rgba(100,140,200,.08) 39.1px)
+}
+#paper p+p{margin-top:1.2rem}
+
+.wc{display:inline;position:relative;padding:1px 3px;border-radius:3px;transition:background .4s,box-shadow .4s,color .4s}
+.wc.hl-cyan{background:rgba(0,212,255,.22);color:#004a66;box-shadow:0 0 0 1.5px rgba(0,212,255,.45),0 0 14px rgba(0,212,255,.15)}
+.wc.hl-purple{background:rgba(168,85,247,.2);color:#350055;box-shadow:0 0 0 1.5px rgba(168,85,247,.4),0 0 14px rgba(168,85,247,.12)}
+.wc.hl-green{background:rgba(16,185,129,.22);color:#003d25;box-shadow:0 0 0 1.5px rgba(16,185,129,.5),0 0 18px rgba(16,185,129,.2);font-weight:700}
+.wc.hl-amber{background:rgba(245,158,11,.2);color:#5a3500;box-shadow:0 0 0 1.5px rgba(245,158,11,.4),0 0 14px rgba(245,158,11,.12)}
+
+/* ── Definition cards ── */
+.def-card{
+  position:absolute;width:260px;padding:1.5rem;border-radius:14px;
+  backdrop-filter:blur(24px);opacity:0;transform:translateY(12px)
+}
+#def-node{left:5%;top:50%;transform:translateY(-50%) translateX(-20px);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.28)}
+#def-edge{right:5%;top:50%;transform:translateY(-50%) translateX(20px);background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.28)}
+.def-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.3rem}
+#def-node .def-icon{background:rgba(0,212,255,.12);border:2px solid rgba(0,212,255,.4);color:var(--cyan)}
+#def-edge .def-icon{border-radius:6px;width:52px;height:22px;background:rgba(245,158,11,.12);border:2px solid rgba(245,158,11,.4)}
+.def-title{font-size:1.1rem;font-weight:600;margin-bottom:.45rem}
+#def-node .def-title{color:var(--cyan)}
+#def-edge .def-title{color:var(--amber)}
+.def-body{font-size:.83rem;line-height:1.65;color:rgba(255,255,255,.68)}
+.def-eg{
+  margin-top:.75rem;font-size:.72rem;font-family:'JetBrains Mono',monospace;
+  padding:.5rem .75rem;border-radius:6px;color:rgba(255,255,255,.45)
+}
+#def-node .def-eg{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.14)}
+#def-edge .def-eg{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.14)}
+
+/* ── Terminal ── */
+#terminal{
+  position:absolute;left:5%;top:50%;transform:translateY(-50%);
+  width:min(480px,42vw);background:rgba(6,6,18,.92);
+  border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;
+  opacity:0;backdrop-filter:blur(24px)
+}
+.t-bar{
+  padding:.7rem 1rem;background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;gap:.45rem
+}
+.t-btn{width:10px;height:10px;border-radius:50%}
+.t-title{margin-left:.5rem;font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.35);font-family:'JetBrains Mono',monospace}
+.t-body{padding:1.2rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.85}
+.tl{opacity:0;transition:opacity .2s}
+.tc{color:#4a5568}.tf{color:#a855f7}.ts{color:#10b981}.tn{color:#f59e0b}
+.to{color:rgba(255,255,255,.45)}.th{color:var(--cyan)}
+.tag{display:inline-block;padding:0 6px;border-radius:4px;font-size:.75rem;margin:1px}
+.tag-c{background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.3);color:var(--cyan)}
+.tag-g{background:rgba(16,185,129,.13);border:1px solid rgba(16,185,129,.3);color:var(--green)}
+.cursor{display:inline-block;width:7px;height:.9em;background:var(--cyan);vertical-align:middle;animation:blink 1s infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+
+/* ── LLM query ── */
+#llm-query{position:absolute;top:7%;left:50%;transform:translateX(-50%);text-align:center;opacity:0}
+#llm-query .ql{font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:.5rem;font-family:'JetBrains Mono',monospace}
+#llm-query .qt{font-size:1.3rem;font-weight:600;color:#fff}
+
+/* ── Count chips ── */
+#count-display{
+  position:absolute;right:5%;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:.75rem;opacity:0
+}
+.count-chip{
+  display:flex;align-items:center;gap:.75rem;padding:.75rem 1.1rem;
+  background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.08)
+}
+.chip-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.chip-val{font-size:1.4rem;font-weight:700}
+.chip-lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+
+<div id="canvas-wrap"><canvas id="three-canvas"></canvas></div>
+
+<!-- SVG overlay for paper connection arcs -->
+<svg id="arc-svg" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:12;overflow:visible;opacity:0"></svg>
+
+<!-- Scroll driver -->
+<div id="scroll-driver"></div>
+
+<div id="overlay">
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+
+  <!-- Hero -->
+  <div id="hero">
+    <div class="eyebrow">AI Committee · 2026</div>
+    <h1>Knowledge<br>Graphs</h1>
+    <div class="sub">How structured information powers modern AI</div>
+    <div class="hint">scroll to explore</div>
+  </div>
+
+  <!-- Paper -->
+  <div id="paper-wrap">
+    <div id="paper">
+      <p>
+        <span class="wc" id="wc-llm" data-hl="cyan">Language models</span>
+        process massive amounts of
+        <span class="wc" id="wc-text" data-hl="purple">text data</span>
+        to uncover
+        <span class="wc" id="wc-patterns" data-hl="purple">patterns in language</span>.
+        This knowledge is stored implicitly in billions of
+        <span class="wc" id="wc-params" data-hl="purple">parameters</span> — opaque and hard to inspect.
+      </p>
+      <p>
+        <span class="wc" id="wc-kg" data-hl="green">Knowledge graphs</span>
+        take a different approach. They represent information as
+        <span class="wc" id="wc-entities" data-hl="cyan">entities</span>
+        connected by explicit
+        <span class="wc" id="wc-rels" data-hl="amber">relationships</span> —
+        making knowledge visible, queryable, and trustworthy.
+      </p>
+      <p>
+        By combining language models with knowledge graphs,
+        <span class="wc" id="wc-ai" data-hl="amber">AI systems</span>
+        can retrieve specific
+        <span class="wc" id="wc-facts" data-hl="amber">facts</span>
+        and reason over
+        <span class="wc" id="wc-data" data-hl="purple">structured data</span>
+        with precision and transparency.
+      </p>
+    </div>
+  </div>
+
+  <!-- Definition cards -->
+  <div class="def-card" id="def-node">
+    <div class="def-icon">●</div>
+    <div class="def-title">Node</div>
+    <div class="def-body">A <strong>node</strong> represents a distinct concept, entity, or piece of information — a single meaningful unit in the graph.</div>
+    <div class="def-eg">"Knowledge Graph" · "Language Model" · "Entity"</div>
+  </div>
+
+  <div class="def-card" id="def-edge">
+    <div class="def-icon"></div>
+    <div class="def-title">Edge</div>
+    <div class="def-body">An <strong>edge</strong> is a named relationship connecting two nodes — the meaning of that link, not just a line.</div>
+    <div class="def-eg">"processes →" · "contains →" · "queries →"</div>
+  </div>
+
+  <!-- LLM section -->
+  <div id="llm-query">
+    <div class="ql">AI Agent Query</div>
+    <div class="qt" id="qt-text">What does this system know about knowledge graphs?</div>
+  </div>
+
+  <div id="terminal">
+    <div class="t-bar">
+      <div class="t-btn" style="background:#ff5f57"></div>
+      <div class="t-btn" style="background:#ffbd2e"></div>
+      <div class="t-btn" style="background:#28ca41"></div>
+      <div class="t-title">graph_agent.py</div>
+    </div>
+    <div class="t-body">
+      <div class="tl tc" id="tl0"># AI agent queries the knowledge graph</div>
+      <div class="tl" id="tl1">agent = GraphAgent(model=<span class="ts">"claude-opus-4-8"</span>)</div>
+      <div class="tl tc" id="tl2">&nbsp;</div>
+      <div class="tl tc" id="tl3"># Step 1: Locate relevant nodes</div>
+      <div class="tl" id="tl4">results = agent.<span class="tf">searchNodes</span>(<span class="ts">"Knowledge Graph"</span>)</div>
+      <div class="tl to" id="tl5">→ <span class="tag tag-c">Knowledge Graph</span><span class="tag tag-c">Graph DB</span><span class="tag tag-c">Ontology</span></div>
+      <div class="tl tc" id="tl6">&nbsp;</div>
+      <div class="tl tc" id="tl7"># Step 2: Expand to connected context</div>
+      <div class="tl" id="tl8">neighborhood = agent.<span class="tf">expandNeighborhood</span>(</div>
+      <div class="tl" id="tl9" style="padding-left:1.5rem">node=<span class="ts">"Knowledge Graph"</span>, depth=<span class="tn">2</span></div>
+      <div class="tl" id="tl10">)</div>
+      <div class="tl to" id="tl11">→ <span class="th">14 nodes</span> · <span class="th">23 edges</span> retrieved</div>
+      <div class="tl tc" id="tl12">&nbsp;</div>
+      <div class="tl tc" id="tl13"># Graph context injected into LLM prompt ✓</div>
+    </div>
+  </div>
+
+  <!-- Count display -->
+  <div id="count-display">
+    <div class="count-chip">
+      <div class="chip-dot" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></div>
+      <div>
+        <div class="chip-val th" id="chip-nodes">0</div>
+        <div class="chip-lbl">Nodes</div>
+      </div>
+    </div>
+    <div class="count-chip">
+      <div class="chip-dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></div>
+      <div>
+        <div class="chip-val" style="color:var(--amber)" id="chip-edges">0</div>
+        <div class="chip-lbl">Edges</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section badge -->
+  <div id="section-badge">
+    <div class="sb-num" id="sb-num">01 / 06</div>
+    <div class="sb-name" id="sb-name">Introduction</div>
+  </div>
+
+  <!-- Nav dots -->
+  <div id="nav-dots">
+    <div class="nav-dot active" title="Introduction"></div>
+    <div class="nav-dot" title="Raw Information"></div>
+    <div class="nav-dot" title="Concepts Emerge"></div>
+    <div class="nav-dot" title="Nodes &amp; Edges"></div>
+    <div class="nav-dot" title="The Full Graph"></div>
+    <div class="nav-dot" title="AI Navigation"></div>
+  </div>
+
+  <!-- Status bar -->
+  <div id="status-bar">
+    <div style="display:flex;align-items:center;gap:.5rem"><div class="s-dot"></div><span>GRAPH ENGINE ACTIVE</span></div>
+    <span id="sb-nodecount">0 NODES</span>
+    <span id="sb-edgecount">0 EDGES</span>
+    <span style="margin-left:auto">KNOWLEDGE GRAPH INTRO v1.0</span>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+gsap.registerPlugin(ScrollTrigger);
+
+// ── Renderer ──────────────────────────────────────────────────
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x03030f);
+scene.fog = new THREE.FogExp2(0x03030f, 0.018);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(0, 0, 20);
+
+// Post-processing
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.4, 0.5, 0.08);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// ── Lighting ──────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x0a0a1a, 2));
+const pl1 = new THREE.PointLight(0x00d4ff, 3, 60);
+pl1.position.set(12, 10, 10);
+scene.add(pl1);
+const pl2 = new THREE.PointLight(0xa855f7, 2, 60);
+pl2.position.set(-12, -6, 5);
+scene.add(pl2);
+const pl3 = new THREE.PointLight(0x10b981, 1.5, 40);
+pl3.position.set(0, -10, -5);
+scene.add(pl3);
+
+// ── Stars ─────────────────────────────────────────────────────
+{
+  const geo = new THREE.BufferGeometry();
+  const N = 4000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const starColors = [[0,.85,1],[.66,.34,.97],[.06,.73,.5],[.96,.62,.04]];
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random()-.5)*400;
+    pos[i*3+1] = (Math.random()-.5)*400;
+    pos[i*3+2] = (Math.random()-.5)*400;
+    const c = starColors[Math.floor(Math.random()*4)];
+    col[i*3]=c[0];col[i*3+1]=c[1];col[i*3+2]=c[2];
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size:.12, vertexColors:true, transparent:true, opacity:.7 });
+  scene.add(new THREE.Points(geo, mat));
+}
+
+// ── Grid ──────────────────────────────────────────────────────
+const grid = new THREE.GridHelper(300, 100, 0x0d1f40, 0x070e1f);
+grid.position.y = -18;
+grid.material.transparent = true;
+grid.material.opacity = 0;
+scene.add(grid);
+
+// ── Data: concept nodes ───────────────────────────────────────
+const CNODES = [
+  { id:'llm',      label:'Language Models', color:0x00d4ff, pos:[-4.5, 2.5, 0],    elId:'wc-llm'      },
+  { id:'text',     label:'Text Data',       color:0xa855f7, pos:[-8,   0.5,-1],     elId:'wc-text'     },
+  { id:'patterns', label:'Patterns',        color:0xa855f7, pos:[-7,  -2.5, 1.5],  elId:'wc-patterns' },
+  { id:'params',   label:'Parameters',      color:0xa855f7, pos:[-2.5, 4,  -2.5],  elId:'wc-params'   },
+  { id:'kg',       label:'Knowledge Graph', color:0x10b981, pos:[ 3.5, 0,   0],    elId:'wc-kg'       },
+  { id:'entities', label:'Entities',        color:0x00d4ff, pos:[ 6,   2.5,-1],    elId:'wc-entities' },
+  { id:'rels',     label:'Relationships',   color:0xf59e0b, pos:[ 6,  -2.5, 1],    elId:'wc-rels'     },
+  { id:'ai',       label:'AI Systems',      color:0xf59e0b, pos:[ 0.5,-3.5, 2.5],  elId:'wc-ai'       },
+  { id:'facts',    label:'Facts',           color:0xf59e0b, pos:[ 7.5, 0,   2.5],  elId:'wc-facts'    },
+  { id:'data',     label:'Structured Data', color:0xa855f7, pos:[ 1,   3,   3],    elId:'wc-data'     },
+];
+
+const CEDGES = [
+  { from:'llm',      to:'text',     label:'processes'    },
+  { from:'llm',      to:'patterns', label:'learns'       },
+  { from:'llm',      to:'params',   label:'encoded in'   },
+  { from:'kg',       to:'entities', label:'contains'     },
+  { from:'kg',       to:'rels',     label:'contains'     },
+  { from:'kg',       to:'facts',    label:'stores'       },
+  { from:'entities', to:'rels',     label:'connected by' },
+  { from:'ai',       to:'kg',       label:'queries'      },
+  { from:'ai',       to:'data',     label:'reasons over' },
+  { from:'llm',      to:'ai',       label:'powers'       },
+];
+
+// ── Node / edge creation helpers ──────────────────────────────
+function mkNode(color, r=0.38) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(r, 32, 32),
+    new THREE.MeshStandardMaterial({ color, emissive:color, emissiveIntensity:.9, roughness:.15, metalness:.2 })
+  );
+  mesh.scale.setScalar(0);
+  scene.add(mesh);
+  return mesh;
+}
+
+function mkLine(a, b, color=0xffffff, opacity=.4) {
+  const geo = new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]);
+  const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0 });
+  const line = new THREE.Line(geo, mat);
+  line._targetOpacity = opacity;
+  scene.add(line);
+  return line;
+}
+
+// ── Concept meshes ────────────────────────────────────────────
+const cMeshes = {};
+const cLabels = {};
+CNODES.forEach(n => {
+  const mesh = mkNode(n.color);
+  mesh.position.set(...n.pos);
+  cMeshes[n.id] = mesh;
+
+  const lbl = document.createElement('div');
+  lbl.style.cssText = `position:fixed;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;
+    color:#${n.color.toString(16).padStart(6,'0')};pointer-events:none;white-space:nowrap;opacity:0;z-index:20;
+    transform:translate(-50%,-100%) translateY(-10px);text-shadow:0 0 12px currentColor;letter-spacing:.04em`;
+  lbl.textContent = n.label;
+  document.getElementById('overlay').appendChild(lbl);
+  cLabels[n.id] = lbl;
+});
+
+const cEdgeLines = [];
+function buildConceptEdgeLines() {
+  if (cEdgeLines.length) return;
+  CEDGES.forEach(e => {
+    const a = new THREE.Vector3(...CNODES.find(n=>n.id===e.from).pos);
+    const b = new THREE.Vector3(...CNODES.find(n=>n.id===e.to).pos);
+    cEdgeLines.push(mkLine(a, b, 0xffffff, .35));
+  });
+}
+
+// ── Galaxy (full graph) ───────────────────────────────────────
+const gNodes = [];
+const gEdges = [];
+
+{
+  const palette = [0x00d4ff,0xa855f7,0x10b981,0xf59e0b,0xec4899,0x60a5fa,0xfb923c];
+
+  // concept nodes at scaled positions
+  CNODES.forEach(n => {
+    const mesh = mkNode(n.color, .5);
+    mesh.position.set(n.pos[0]*2.8, n.pos[1]*2.8, n.pos[2]*2.8);
+    gNodes.push({ mesh, pos: mesh.position.clone(), isConcept:true, id:n.id, color:n.color });
+  });
+
+  // random extra nodes
+  for (let i = 0; i < 75; i++) {
+    const theta = Math.random()*Math.PI*2;
+    const phi   = Math.acos(2*Math.random()-1);
+    const r     = 6 + Math.random()*22;
+    const color = palette[Math.floor(Math.random()*palette.length)];
+    const mesh  = mkNode(color, .18 + Math.random()*.18);
+    mesh.position.set(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta)*.55, r*Math.cos(phi));
+    gNodes.push({ mesh, pos: mesh.position.clone(), isConcept:false, color });
+  }
+
+  // edges: concept-to-concept (scaled)
+  CEDGES.forEach(e => {
+    const a = gNodes.find(n=>n.id===e.from);
+    const b = gNodes.find(n=>n.id===e.to);
+    if (!a||!b) return;
+    gEdges.push(mkLine(a.mesh.position, b.mesh.position, 0x00d4ff, .5));
+  });
+
+  // random extra edges
+  for (let i = 0; i < 130; i++) {
+    const ai = Math.floor(Math.random()*gNodes.length);
+    const bi = Math.floor(Math.random()*gNodes.length);
+    if (ai===bi) continue;
+    const d = gNodes[ai].pos.distanceTo(gNodes[bi].pos);
+    if (d > 20) continue;
+    gEdges.push(mkLine(gNodes[ai].mesh.position, gNodes[bi].mesh.position, gNodes[ai].color, .2));
+  }
+}
+
+// ── 3D → Screen projection ────────────────────────────────────
+function toScreen(v3) {
+  const v = v3.clone().project(camera);
+  return { x:(v.x*.5+.5)*window.innerWidth, y:(-v.y*.5+.5)*window.innerHeight };
+}
+
+// ── SVG arc lines for paper ───────────────────────────────────
+let arcsMade = false;
+function buildPaperArcs() {
+  if (arcsMade) return;
+  arcsMade = true;
+  const svg = document.getElementById('arc-svg');
+  const arcs = [
+    { from:'wc-llm',  to:'wc-text',     color:'rgba(0,212,255,.55)'   },
+    { from:'wc-llm',  to:'wc-patterns', color:'rgba(168,85,247,.55)'  },
+    { from:'wc-kg',   to:'wc-entities', color:'rgba(16,185,129,.6)'   },
+    { from:'wc-kg',   to:'wc-rels',     color:'rgba(16,185,129,.6)'   },
+    { from:'wc-entities',to:'wc-rels',  color:'rgba(245,158,11,.55)'  },
+    { from:'wc-ai',   to:'wc-kg',       color:'rgba(245,158,11,.55)'  },
+  ];
+  arcs.forEach((arc, i) => {
+    const a = document.getElementById(arc.from)?.getBoundingClientRect();
+    const b = document.getElementById(arc.to)?.getBoundingClientRect();
+    if (!a||!b) return;
+    const ax = a.left+a.width/2, ay = a.top+a.height/2;
+    const bx = b.left+b.width/2, by = b.top+b.height/2;
+    const cx = (ax+bx)/2, cy = Math.min(ay,by)-28;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${ax},${ay} Q${cx},${cy} ${bx},${by}`);
+    path.setAttribute('stroke',arc.color);
+    path.setAttribute('stroke-width','1.5');
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke-dasharray','800');
+    path.setAttribute('stroke-dashoffset','800');
+    svg.appendChild(path);
+    gsap.to(path,{strokeDashoffset:0,duration:.7,delay:i*.12,ease:'power2.inOut'});
+  });
+}
+
+// ── Highlight word order ──────────────────────────────────────
+const HL_STEPS = [
+  { id:'wc-llm',      cls:'hl-cyan',   at:.08 },
+  { id:'wc-text',     cls:'hl-purple', at:.18 },
+  { id:'wc-patterns', cls:'hl-purple', at:.27 },
+  { id:'wc-params',   cls:'hl-purple', at:.33 },
+  { id:'wc-kg',       cls:'hl-green',  at:.45 },
+  { id:'wc-entities', cls:'hl-cyan',   at:.56 },
+  { id:'wc-rels',     cls:'hl-amber',  at:.65 },
+  { id:'wc-ai',       cls:'hl-amber',  at:.75 },
+  { id:'wc-facts',    cls:'hl-amber',  at:.83 },
+  { id:'wc-data',     cls:'hl-purple', at:.92 },
+];
+const highlighted = new Set();
+function applyHighlights(t) {
+  HL_STEPS.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (!el) return;
+    if (t >= s.at && !highlighted.has(s.id)) {
+      highlighted.add(s.id);
+      el.classList.add(s.cls);
+      gsap.fromTo(el,{scale:1.08},{scale:1,duration:.4,ease:'back.out(2)'});
+    } else if (t < s.at && highlighted.has(s.id)) {
+      highlighted.delete(s.id);
+      el.classList.remove(s.cls);
+    }
+  });
+}
+
+// ── Search wave ───────────────────────────────────────────────
+let searchWave = null;
+function getSearchWave() {
+  if (!searchWave) {
+    const mat = new THREE.MeshBasicMaterial({color:0x00d4ff,transparent:true,wireframe:true});
+    searchWave = new THREE.Mesh(new THREE.SphereGeometry(1,14,14), mat);
+    scene.add(searchWave);
+  }
+  return searchWave;
+}
+
+// ── Scroll state ──────────────────────────────────────────────
+const S = { p:0, sec:-1 };
+const SEC_NAMES = ['Introduction','Raw Information','Concepts Emerge','Nodes & Edges','The Full Graph','AI Navigation'];
+
+function setSection(sec) {
+  if (sec === S.sec) return;
+  S.sec = sec;
+  const num = String(sec+1).padStart(2,'0') + ' / 06';
+  gsap.to('#section-badge',{opacity:1,duration:.3});
+  const nb = document.getElementById('sb-num');
+  const nn = document.getElementById('sb-name');
+  gsap.to([nb,nn],{opacity:0,y:-4,duration:.15,onComplete:()=>{
+    nb.textContent = num;
+    nn.textContent = SEC_NAMES[sec]||'';
+    gsap.to([nb,nn],{opacity:1,y:0,duration:.2});
+  }});
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===sec));
+}
+
+function updateCounts(nodes, edges) {
+  document.getElementById('chip-nodes').textContent = nodes;
+  document.getElementById('chip-edges').textContent = edges;
+  document.getElementById('sb-nodecount').textContent = `${nodes} NODES`;
+  document.getElementById('sb-edgecount').textContent = `${edges} EDGES`;
+}
+
+// ── Terminal line reveal ──────────────────────────────────────
+function revealTerminalLines(t, from, to) {
+  for (let i = 0; i <= 13; i++) {
+    const el = document.getElementById(`tl${i}`);
+    if (!el) continue;
+    if (i < from || i > to) { el.style.opacity='0'; continue; }
+    const frac = (i-from)/(to-from+1);
+    el.style.opacity = t > frac ? '1' : '0';
+  }
+}
+
+// ── Main scene update (called every RAF) ─────────────────────
+function updateScene(p) {
+  // ── Hero  0 → 0.08 ────────────────────────────────────────
+  if (p < 0.10) {
+    setSection(0);
+    const t = Math.min(1, p/0.08);
+    gsap.set('#hero',{opacity: 1-Math.max(0,t*2.5-1.5), y:-t*25});
+    gsap.set('#paper-wrap',{opacity:0});
+    camera.position.set(0,0,20);
+    camera.lookAt(0,0,0);
+  }
+
+  // ── Paper  0.06 → 0.24 ────────────────────────────────────
+  if (p >= 0.05 && p < 0.44) {
+    const fadeIn = Math.min(1,(p-0.05)/0.05);
+    gsap.set('#paper-wrap',{opacity:fadeIn});
+    gsap.set('#hero',{opacity: Math.max(0, 1-(p-0.05)/0.04)});
+
+    if (p >= 0.09 && p < 0.24) {
+      setSection(1);
+      const ht = (p-0.09)/0.15;
+      applyHighlights(ht);
+      const rotY = -10+ht*5;
+      const rotX =  6-ht*2;
+      gsap.set('#paper-wrap',{rotationY:rotY,rotationX:rotX});
+    }
+
+    // Arc lines appear  0.20 → 0.27
+    if (p >= 0.20 && p < 0.30) {
+      const arcT = (p-0.20)/0.07;
+      gsap.set('#arc-svg',{opacity:arcT});
+      if (arcT > 0.1) buildPaperArcs();
+    } else if (p < 0.20) {
+      gsap.set('#arc-svg',{opacity:0});
+    }
+  }
+
+  // ── Concept labels sync ───────────────────────────────────
+  if (p >= 0.28 && p < 0.56) {
+    CNODES.forEach(n => {
+      const m = cMeshes[n.id];
+      if (m.scale.x > 0.05) {
+        const s = toScreen(m.position);
+        const lbl = cLabels[n.id];
+        lbl.style.left = s.x+'px';
+        lbl.style.top  = s.y+'px';
+      }
+    });
+  }
+
+  // ── Extract: paper → nodes  0.28 → 0.44 ─────────────────
+  if (p >= 0.28 && p < 0.44) {
+    setSection(2);
+    const t = (p-0.28)/0.16;
+    gsap.set('#paper-wrap',{opacity:Math.max(0,1-t*2.5)});
+    gsap.set('#arc-svg',{opacity:Math.max(0,1-t*3)});
+
+    CNODES.forEach((n,i) => {
+      const delay = (i/CNODES.length)*0.45;
+      const nt = Math.max(0,Math.min(1,(t-delay)*3.5));
+      cMeshes[n.id].scale.setScalar(nt);
+      cLabels[n.id].style.opacity = nt;
+    });
+
+    if (t > 0.45) {
+      buildConceptEdgeLines();
+      const et = (t-0.45)/0.55;
+      cEdgeLines.forEach((ln,i) => {
+        const lt = Math.max(0,Math.min(1,(et-i/cEdgeLines.length)*3));
+        ln.material.opacity = lt*ln._targetOpacity;
+      });
+    }
+
+    const camZ = 20 - t*4;
+    camera.position.set(0, 0, camZ);
+    camera.lookAt(0,0,0);
+    grid.material.opacity = t*.25;
+    updateCounts(Math.round(t*10), Math.round(t*10));
+  }
+
+  // ── Definitions  0.44 → 0.56 ─────────────────────────────
+  if (p >= 0.44 && p < 0.56) {
+    setSection(3);
+    const t = (p-0.44)/0.12;
+
+    CNODES.forEach(n => { cMeshes[n.id].scale.setScalar(1); cLabels[n.id].style.opacity='1'; });
+    buildConceptEdgeLines();
+    cEdgeLines.forEach(ln => { ln.material.opacity = ln._targetOpacity; });
+
+    gsap.set('#def-node',{opacity:Math.min(1,t*4), x:0, y:'-50%'});
+    gsap.set('#def-edge',{opacity:Math.min(1,Math.max(0,(t-.3)*4)), x:0, y:'-50%'});
+    gsap.set('#count-display',{opacity:Math.min(1,t*3)});
+    updateCounts(CNODES.length, CEDGES.length);
+
+    camera.position.set(0,0,16);
+    camera.lookAt(0,0,0);
+    grid.material.opacity = .25;
+  } else {
+    gsap.set('#def-node',{opacity:0});
+    gsap.set('#def-edge',{opacity:0});
+    gsap.set('#count-display',{opacity:0});
+  }
+
+  // ── Hide concept labels outside their section ─────────────
+  if (p < 0.28 || p >= 0.56) {
+    CNODES.forEach(n => {
+      cMeshes[n.id].scale.setScalar(p >= 0.56 ? 0 : cMeshes[n.id].scale.x);
+      cLabels[n.id].style.opacity = '0';
+    });
+    cEdgeLines.forEach(ln => { if (p < 0.28) ln.material.opacity = 0; });
+  }
+
+  // ── Galaxy  0.56 → 0.72 ───────────────────────────────────
+  if (p >= 0.56 && p < 0.72) {
+    setSection(4);
+    const t = (p-0.56)/0.16;
+
+    // hide concept meshes
+    CNODES.forEach(n => cMeshes[n.id].scale.setScalar(Math.max(0,1-t*4)));
+
+    // reveal galaxy nodes
+    gNodes.forEach((gn,i) => {
+      const delay = (i/gNodes.length)*0.55;
+      const nt = Math.max(0,Math.min(1,(t-delay)*4));
+      gn.mesh.scale.setScalar(nt);
+    });
+    // reveal galaxy edges
+    gEdges.forEach((ln,i) => {
+      const delay = (i/gEdges.length)*0.7;
+      const lt = Math.max(0,Math.min(1,(t-delay)*4));
+      ln.material.opacity = lt*ln._targetOpacity;
+    });
+
+    // camera pulls back
+    const camZ = 16 + t*18;
+    const camY = t*4;
+    camera.position.set(0, camY, camZ);
+    camera.lookAt(0,0,0);
+    grid.material.opacity = .25+t*.2;
+
+    updateCounts(Math.round(10+t*(gNodes.length-10)), Math.round(10+t*(gEdges.length-10)));
+  }
+
+  // ── Full galaxy steady state helpers ─────────────────────
+  if (p >= 0.56) {
+    // ensure concept-small meshes are hidden, galaxy visible
+    if (p >= 0.72) {
+      CNODES.forEach(n => cMeshes[n.id].scale.setScalar(0));
+    }
+  }
+
+  // ── LLM search  0.72 → 0.88 ──────────────────────────────
+  if (p >= 0.72 && p < 0.88) {
+    setSection(5);
+    const t = (p-0.72)/0.16;
+
+    // All galaxy visible
+    gNodes.forEach(gn => gn.mesh.scale.setScalar(1));
+    gEdges.forEach(ln => { ln.material.opacity = ln._targetOpacity*.5; });
+
+    camera.position.set(0,5,34);
+    camera.lookAt(0,0,0);
+
+    gsap.set('#llm-query',{opacity:Math.min(1,t*4)});
+    gsap.set('#terminal',{opacity:Math.min(1,t*4), x:0});
+
+    if (t < .35) {
+      document.getElementById('qt-text').textContent = 'What does this system know about knowledge graphs?';
+    } else {
+      document.getElementById('qt-text').textContent = 'searchNodes("Knowledge Graph")';
+    }
+
+    revealTerminalLines(t, 0, 5);
+
+    // search wave + node highlight
+    const wt = Math.max(0,(t-.2)/.8);
+    const wave = getSearchWave();
+    wave.scale.setScalar(wt*35);
+    wave.material.opacity = .18*(1-wt);
+
+    gNodes.forEach(gn => {
+      const dist = gn.mesh.position.length();
+      const reached = wt > dist/35;
+      if (reached) {
+        const intensity = gn.id==='kg' ? 4 : gn.isConcept ? 1.8 : .8;
+        gn.mesh.material.emissiveIntensity = intensity;
+        if (gn.id==='kg') gn.mesh.scale.setScalar(1.6);
+      } else {
+        gn.mesh.material.emissiveIntensity = .5;
+      }
+    });
+
+    updateCounts(gNodes.length, gEdges.length);
+  }
+
+  // ── Expand neighborhood  0.88 → 1.0 ──────────────────────
+  if (p >= 0.88) {
+    const t = (p-0.88)/0.12;
+
+    gEdges.forEach(ln => { ln.material.opacity = .08; });
+    gsap.set('#llm-query',{opacity:1});
+    gsap.set('#terminal',{opacity:1});
+    document.getElementById('qt-text').textContent = 'expandNeighborhood("Knowledge Graph", depth=2)';
+    revealTerminalLines(t, 7, 13);
+
+    const kgGNode = gNodes.find(n=>n.id==='kg');
+    if (kgGNode) {
+      kgGNode.mesh.material.emissiveIntensity = 5;
+      kgGNode.mesh.scale.setScalar(2.2+Math.sin(Date.now()*.003)*.15);
+
+      gNodes.forEach(gn => {
+        if (gn.id==='kg') return;
+        const dist = gn.mesh.position.distanceTo(kgGNode.mesh.position);
+
+        if (dist < 12) {
+          const pull = Math.min(1,t*2);
+          gn.mesh.material.emissiveIntensity = 3*pull;
+          gn.mesh.scale.setScalar(1+pull*.5);
+          // gently attract
+          const dir = kgGNode.mesh.position.clone().sub(gn.mesh.position).normalize();
+          gn.mesh.position.addScaledVector(dir, 0.008*t);
+          // light edges near here
+          gEdges.forEach(ln => { ln.material.opacity = Math.max(ln.material.opacity, pull*.4); });
+        } else if (dist < 22) {
+          const pull2 = Math.max(0,Math.min(1,(t-.3)*1.5));
+          gn.mesh.material.emissiveIntensity = 1.5*pull2;
+          gn.mesh.scale.setScalar(1+pull2*.2);
+        } else {
+          gn.mesh.material.emissiveIntensity = .08;
+          gn.mesh.scale.setScalar(.7);
+        }
+      });
+    }
+
+    if (searchWave) { searchWave.scale.setScalar(0); searchWave.material.opacity=0; }
+    camera.position.set(-2,6,30);
+    camera.lookAt(0,0,0);
+  }
+}
+
+// ── GSAP ScrollTrigger ────────────────────────────────────────
+ScrollTrigger.create({
+  trigger: '#scroll-driver',
+  start: 'top top',
+  end: 'bottom bottom',
+  scrub: 1.2,
+  onUpdate: self => { S.p = self.progress; },
+});
+
+// ── Hero intro animation ──────────────────────────────────────
+gsap.set('#hero .eyebrow', { y:18 });
+gsap.set('#hero h1',       { y:32 });
+gsap.set('#hero .sub',     { y:18 });
+
+gsap.timeline({ delay:.6 })
+  .to('#hero .eyebrow', { opacity:1, y:0, duration:.7,  ease:'power2.out' })
+  .to('#hero h1',       { opacity:1, y:0, duration:1,   ease:'power2.out' }, .25)
+  .to('#hero .sub',     { opacity:1, y:0, duration:.8,  ease:'power2.out' }, .65)
+  .to('#hero .hint',    { opacity:1,      duration:.8                      }, 1.1)
+  .to('#nav-dots',      { opacity:1,      duration:.5                      }, 1.0)
+  .to('#status-bar',    { opacity:1,      duration:.5                      }, 1.0)
+  .to('#section-badge', { opacity:1,      duration:.5                      }, 1.0);
+
+// ── Resize ────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  bloom.resolution.set(window.innerWidth, window.innerHeight);
+  arcsMade = false; // rebuild arcs on resize
+  document.getElementById('arc-svg').innerHTML = '';
+});
+
+// ── Animation loop ────────────────────────────────────────────
+let tick = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  tick++;
+  const t = tick * 0.01;
+
+  // Star drift
+  scene.children[0]?.rotation && (scene.children[0].rotation.y = t * .015);
+
+  // Wobble lights
+  pl1.position.set(12+Math.sin(t*.28)*3, 10+Math.cos(t*.35)*2, 10);
+  pl2.position.set(-12+Math.cos(t*.22)*3, -6+Math.sin(t*.3)*2, 5);
+
+  // Pulse concept meshes
+  Object.values(cMeshes).forEach((m,i) => {
+    if (m.scale.x > .05) m.material.emissiveIntensity = .9+.3*Math.sin(t*1.8+i*.9);
+  });
+
+  // Gentle galaxy drift (only when visible)
+  if (S.p >= 0.56) {
+    gNodes.forEach((gn,i) => {
+      gn.mesh.position.y += Math.sin(t*.4+i*.5)*.0008;
+      if (!gn.isConcept) gn.mesh.rotation.y = t*.3+i;
+    });
+  }
+
+  updateScene(S.p);
+  composer.render();
+}
+
+animate();
+</script>
+</body>
+</html>
