@@ -20,8 +20,10 @@ page.on('pageerror', (e) => errors.push(`[pageerror] ${e.message}`));
 await page.goto('http://localhost:5173/', { waitUntil: 'networkidle0' });
 await new Promise((r) => setTimeout(r, 1500));
 
+// beats are in pre-scale story vh; SCROLL_SCALE in src/scroll.js stretches the page
+const SCROLL_SCALE = 1.8;
 for (const vh of beats) {
-  await page.evaluate((v) => scrollTo(0, (innerHeight * v) / 100), vh);
+  await page.evaluate((v) => scrollTo(0, (innerHeight * v) / 100), vh * SCROLL_SCALE);
   await new Promise((r) => setTimeout(r, 1200)); // let scrub catch up
   await page.screenshot({ path: `/tmp/shots/beat-${String(vh).padStart(4, '0')}.png` });
   console.log(`captured beat ${vh}vh`);
