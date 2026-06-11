@@ -18,16 +18,16 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#04050d');
-scene.fog = new THREE.FogExp2('#04050d', 0.0085);
+scene.background = new THREE.Color('#1a1612');
+scene.fog = new THREE.FogExp2('#1a1612', 0.0085);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 400);
 
-scene.add(new THREE.AmbientLight('#5b7ba6', 0.7));
-const key = new THREE.PointLight('#7dd3fc', 900, 0, 1.8);
+scene.add(new THREE.AmbientLight('#8a7560', 0.75));
+const key = new THREE.PointLight('#f5d4b8', 900, 0, 1.8);
 key.position.set(18, 24, 20);
 scene.add(key);
-const rim = new THREE.PointLight('#e879f9', 500, 0, 1.8);
+const rim = new THREE.PointLight('#6e8fa8', 500, 0, 1.8);
 rim.position.set(-22, -14, -18);
 scene.add(rim);
 
@@ -41,7 +41,7 @@ const starGeo = new THREE.BufferGeometry();
 }
 const stars = new THREE.Points(
   starGeo,
-  new THREE.PointsMaterial({ color: '#3c5a82', size: 0.35, transparent: true, opacity: 0.8, depthWrite: false })
+  new THREE.PointsMaterial({ color: '#7a6a58', size: 0.35, transparent: true, opacity: 0.8, depthWrite: false })
 );
 scene.add(stars);
 

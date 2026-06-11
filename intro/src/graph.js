@@ -1,17 +1,20 @@
 import * as THREE from 'three';
 
+// Anthropic-inspired palette for the 3D graph.
+// Names kept stable (cyan/magenta/amber) to avoid touching downstream call sites —
+// the actual hues are clay coral, slate blue, warm gold, ivory, and a muted taupe.
 export const COLORS = {
-  cyan: new THREE.Color('#22d3ee'),
-  magenta: new THREE.Color('#e879f9'),
-  amber: new THREE.Color('#fbbf24'),
-  white: new THREE.Color('#eaf6ff'),
-  base: new THREE.Color('#3d7a9e'),
+  cyan: new THREE.Color('#cc785c'),    // clay coral — story nodes
+  magenta: new THREE.Color('#6e8fa8'), // slate blue — accent cloud / story edges
+  amber: new THREE.Color('#d4a27f'),   // warm gold — search / highlight pings
+  white: new THREE.Color('#f0eee6'),   // ivory
+  base: new THREE.Color('#7a6a58'),    // warm taupe — ambient cloud
 };
 
 const sphereGeo = new THREE.SphereGeometry(1, 24, 18);
 const connectionGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
 
-function makeLabelSprite(text, { color = '#cfe2ea', size = 46, glow = '#0b1322' } = {}) {
+function makeLabelSprite(text, { color = '#f0eee6', size = 46, glow = '#1a1612' } = {}) {
   const pad = 24;
   const cv = document.createElement('canvas');
   const ctx = cv.getContext('2d');
@@ -111,7 +114,7 @@ export class Graph {
       labelSprite: null,
     };
     if (label) {
-      edge.labelSprite = makeLabelSprite(label, { color: '#d9c8e0', size: 34 });
+      edge.labelSprite = makeLabelSprite(label, { color: '#d4a27f', size: 34 });
       this.group.add(edge.labelSprite);
     }
     this.edges.push(edge);
