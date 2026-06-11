@@ -19,7 +19,7 @@ npm run build    # static build in dist/
 2. **Source text** — a "paper" about Ada Lovelace; concepts light up cyan,
    relationship phrases light up magenta, arcs connect them.
 3. **Nodes & edges** — the highlighted words pull off the page and condense
-   into glowing spheres (nodes) joined by sticks (edges), with succinct
+   into glowing spheres (nodes) joined by connections (edges), with succinct
    definitions of each.
 4. **The graph** — camera pulls back; the four facts are revealed as one
    corner of a full 3D knowledge graph.

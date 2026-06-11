@@ -4,8 +4,10 @@ import * as THREE from 'three';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const VH = (v) => (innerHeight * v) / 100;
-const TOTAL = 1100; // total scroll length in vh
+// scroll distance multiplier — higher = more scrolling per section, slower pacing
+const SCROLL_SCALE = 1.8;
+const VH = (v) => (innerHeight * v * SCROLL_SCALE) / 100;
+const TOTAL = 1100; // total scroll length in vh (pre-scale)
 
 // section boundaries (vh of scroll)
 const S = {
@@ -19,7 +21,7 @@ const S = {
 };
 
 export async function buildScrollStory({ graph, rig, state, camera }) {
-  document.getElementById('scroll-space').style.height = `${TOTAL}vh`;
+  document.getElementById('scroll-space').style.height = `${TOTAL * SCROLL_SCALE}vh`;
   await document.fonts.ready;
 
   const $ = (s) => document.querySelector(s);
@@ -149,7 +151,7 @@ export async function buildScrollStory({ graph, rig, state, camera }) {
     // node definition card appears as the spheres settle
     tl.fromTo('#def-node', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.1 }, 0.34);
 
-    // edges draw in as glowing sticks, with relationship labels
+    // edges draw in as glowing connections, with relationship labels
     graph.edges.filter((e) => e.story).forEach((e, i) => {
       tl.to(e, { grow: 1, opacity: 0.9, duration: 0.12, ease: 'power1.inOut' }, 0.52 + i * 0.08);
       tl.to(e, { labelOpacity: 1, duration: 0.08 }, 0.6 + i * 0.08);
@@ -300,8 +302,8 @@ function makeTerminal(el) {
     const text = chunks.map((c) => c.text.slice(0, Math.round(c.shown))).join('');
     el.innerHTML = text
       .replace(/(searchNodes|expandNeighborhood)/g, '<span class="tk-fn">$1</span>')
-      .replace(/(✓[^\n]*)/g, '<span style="color:#34d399">$1</span>')
-      .replace(/(\$ user:[^\n]*)/g, '<span style="color:#fbbf24">$1</span>');
+      .replace(/(✓[^\n]*)/g, '<span style="color:#6fae93">$1</span>')
+      .replace(/(\$ user:[^\n]*)/g, '<span style="color:#cdab66">$1</span>');
   };
   return {
     chunk(tl, at, dur, text) {

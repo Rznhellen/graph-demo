@@ -9,9 +9,9 @@ export const COLORS = {
 };
 
 const sphereGeo = new THREE.SphereGeometry(1, 24, 18);
-const stickGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
+const connectionGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
 
-function makeLabelSprite(text, { color = '#bdf4ff', size = 46, glow = '#22d3ee' } = {}) {
+function makeLabelSprite(text, { color = '#cfe2ea', size = 46, glow = '#0b1322' } = {}) {
   const pad = 24;
   const cv = document.createElement('canvas');
   const ctx = cv.getContext('2d');
@@ -23,7 +23,7 @@ function makeLabelSprite(text, { color = '#bdf4ff', size = 46, glow = '#22d3ee' 
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   ctx.shadowColor = glow;
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = 8;
   ctx.fillStyle = color;
   ctx.fillText(text, cv.width / 2, cv.height / 2 + 2);
   const tex = new THREE.CanvasTexture(cv);
@@ -101,7 +101,7 @@ export class Graph {
       opacity: story ? 0 : 0.32,
       depthWrite: false,
     });
-    const mesh = new THREE.Mesh(stickGeo, mat);
+    const mesh = new THREE.Mesh(connectionGeo, mat);
     this.group.add(mesh);
     const edge = {
       a, b, mesh, mat, story,
@@ -111,7 +111,7 @@ export class Graph {
       labelSprite: null,
     };
     if (label) {
-      edge.labelSprite = makeLabelSprite(label, { color: '#f5c6ff', glow: '#e879f9', size: 34 });
+      edge.labelSprite = makeLabelSprite(label, { color: '#d9c8e0', size: 34 });
       this.group.add(edge.labelSprite);
     }
     this.edges.push(edge);

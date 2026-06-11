@@ -3,8 +3,12 @@
   --cy: #22d3ee;
   --mg: #e879f9;
   --am: #fbbf24;
+  /* muted variants for text — the full-saturation neons are kept for the 3D graph */
+  --cy-text: #7fb8c9;
+  --mg-text: #bf9ccc;
+  --am-text: #cdab66;
   --ink: #e7ecf5;
-  --dim: #8b93a7;
+  --dim: #a6aec1;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "Space Grotesk", system-ui, sans-serif;
 }
@@ -51,7 +55,7 @@ body {
 }
 .hud-top { top: 24px; }
 .hud-bottom { bottom: 24px; }
-.hud-brand { color: var(--cy); text-shadow: 0 0 12px rgba(34, 211, 238, 0.6); }
+.hud-brand { color: var(--cy-text); }
 .hud-section { transition: color 0.3s; }
 
 .progress-rail {
@@ -75,7 +79,7 @@ body {
 
 .kicker {
   font-family: var(--mono); font-size: 12px; letter-spacing: 0.35em;
-  color: var(--cy); margin-bottom: 22px;
+  color: var(--cy-text); margin-bottom: 22px;
 }
 
 .hero-title {
@@ -83,9 +87,9 @@ body {
   font-weight: 700; letter-spacing: 0.02em;
 }
 .grad {
-  background: linear-gradient(100deg, var(--cy) 10%, var(--mg) 90%);
+  background: linear-gradient(100deg, var(--cy-text) 10%, var(--mg-text) 90%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 26px rgba(34, 211, 238, 0.35));
+  filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.12));
 }
 .hero-sub {
   margin-top: 26px; max-width: 520px; color: var(--dim);
@@ -110,8 +114,7 @@ body {
 
 .step-label {
   font-family: var(--mono); font-size: 12px; letter-spacing: 0.3em;
-  color: var(--am); margin-bottom: 30px;
-  text-shadow: 0 0 14px rgba(251, 191, 36, 0.4);
+  color: var(--am-text); margin-bottom: 30px;
 }
 
 /* ---------- paper ---------- */
@@ -160,10 +163,11 @@ body {
 }
 
 .caption {
-  margin-top: 34px; color: var(--dim); line-height: 1.7;
+  margin-top: 34px; color: #ced6e4; line-height: 1.7;
   font-size: clamp(13px, 1.3vw, 16px);
+  text-shadow: 0 2px 12px rgba(2, 3, 10, 0.9);
 }
-.caption .cy { color: var(--cy); } .caption .mg { color: var(--mg); }
+.caption .cy { color: var(--cy-text); } .caption .mg { color: var(--mg-text); }
 
 /* ---------- definitions ---------- */
 .defs {
@@ -178,8 +182,8 @@ body {
   padding: 18px 24px; border-radius: 8px;
   max-width: 320px;
 }
-.def h3 { font-family: var(--mono); font-size: 14px; letter-spacing: 0.25em; color: var(--cy); margin-bottom: 6px; }
-#def-edge h3 { color: var(--mg); }
+.def h3 { font-family: var(--mono); font-size: 14px; letter-spacing: 0.25em; color: var(--cy-text); margin-bottom: 6px; }
+#def-edge h3 { color: var(--mg-text); }
 .def p { font-size: 14px; color: var(--dim); line-height: 1.5; }
 .def-glyph { flex: 0 0 auto; width: 34px; height: 34px; position: relative; }
 .node-glyph::after {
@@ -203,9 +207,9 @@ body {
 
 .cta {
   margin-top: 44px; font-family: var(--mono); letter-spacing: 0.3em; font-size: 14px;
-  color: var(--bg); background: linear-gradient(90deg, var(--cy), var(--mg));
+  color: var(--bg); background: linear-gradient(90deg, var(--cy-text), var(--mg-text));
   padding: 14px 30px; border-radius: 4px;
-  box-shadow: 0 0 34px rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.2);
 }
 
 /* ---------- terminal ---------- */
@@ -231,6 +235,6 @@ body {
   font-family: var(--mono); font-size: clamp(11px, 1.15vw, 13.5px); line-height: 1.75;
   padding: 16px 18px; min-height: 290px; white-space: pre-wrap; color: #c6cede;
 }
-.term-body .tk-fn { color: var(--cy); } /* injected via innerHTML coloring */
-.cursor { color: var(--cy); animation: blink 0.9s steps(1) infinite; }
+.term-body .tk-fn { color: var(--cy-text); } /* injected via innerHTML coloring */
+.cursor { color: var(--cy-text); animation: blink 0.9s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
