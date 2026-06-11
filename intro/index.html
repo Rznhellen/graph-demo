@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowledge Graphs — An Introduction</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='10' r='5' fill='%2322d3ee'/%3E%3Ccircle cx='24' cy='22' r='5' fill='%23e879f9'/%3E%3Cline x1='10' y1='10' x2='24' y2='22' stroke='%2322d3ee' stroke-width='2'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- 3D canvas (fixed, full-screen) -->
+  <canvas id="gl"></canvas>
+
+  <!-- film grain / scanline / vignette overlays -->
+  <div class="fx-vignette"></div>
+  <div class="fx-scanlines"></div>
+
+  <!-- HUD chrome -->
+  <div class="hud">
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
+    <div class="hud-top">
+      <span class="hud-brand">KG://INTRO</span>
+      <span class="hud-section" id="hud-section">01 — SIGNAL</span>
+    </div>
+    <div class="hud-bottom">
+      <span class="hud-tick" id="hud-progress">0%</span>
+      <span class="hud-tick">AI COMMITTEE BRIEFING</span>
+    </div>
+    <div class="progress-rail">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION OVERLAYS (all fixed, toggled by scroll) ============ -->
+
+  <!-- 1 · HERO -->
+  <section class="overlay" id="s-hero">
+    <p class="kicker">// AN INTERACTIVE BRIEFING</p>
+    <h1 class="hero-title">KNOWLEDGE<br /><span class="grad">GRAPHS</span></h1>
+    <p class="hero-sub">How machines connect ideas — and how LLMs put those connections to work.</p>
+    <div class="scroll-hint">
+      <span>SCROLL</span>
+      <div class="chevron"></div>
+    </div>
+  </section>
+
+  <!-- 2 · PAPER -->
+  <section class="overlay" id="s-paper">
+    <p class="step-label" id="paper-label">STEP 01 — START WITH PLAIN TEXT</p>
+    <div class="paper-tilt">
+      <div class="paper" id="paper">
+        <div class="paper-head">
+          <span class="paper-dot"></span> document_001.txt
+        </div>
+        <p class="paper-body">
+          In 1833, <span class="c" data-node="ada">Ada Lovelace</span> began
+          <span class="r" data-edge="e1">working&nbsp;with</span>
+          <span class="c" data-node="babbage">Charles Babbage</span> on the
+          <span class="c" data-node="engine">Analytical Engine</span> — a general-purpose
+          mechanical computer that he
+          <span class="r" data-edge="e2">designed</span>
+          <span class="r" data-edge="e3">at his workshop in</span>
+          <span class="c" data-node="london">London</span>. Her notes contained what is
+          now regarded as the first computer program.
+        </p>
+        <svg class="paper-arcs" id="paper-arcs"></svg>
+      </div>
+    </div>
+    <p class="caption" id="paper-caption">Knowledge starts as unstructured text.<br/>But hidden inside are <b class="cy">things</b> and the <b class="mg">relationships</b> between them.</p>
+  </section>
+
+  <!-- 3 · EXTRACTION / definitions -->
+  <section class="overlay" id="s-extract">
+    <p class="step-label">STEP 02 — EXTRACT THE STRUCTURE</p>
+    <div class="defs">
+      <div class="def" id="def-node">
+        <span class="def-glyph node-glyph"></span>
+        <div>
+          <h3>NODE</h3>
+          <p>An entity — a person, place, or concept.</p>
+        </div>
+      </div>
+      <div class="def" id="def-edge">
+        <span class="def-glyph edge-glyph"></span>
+        <div>
+          <h3>EDGE</h3>
+          <p>A relationship connecting two nodes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · ZOOM OUT -->
+  <section class="overlay" id="s-zoom">
+    <p class="step-label">STEP 03 — SCALE IT UP</p>
+    <h2 class="big-line">Connect enough facts…<br/><span class="grad">and you get a knowledge graph.</span></h2>
+    <p class="caption">Every ball is a node. Every stick is an edge.<br/>Facts become a structure a machine can navigate.</p>
+  </section>
+
+  <!-- 5/6 · LLM terminal -->
+  <section class="overlay" id="s-llm">
+    <p class="step-label" id="llm-label">STEP 04 — AN LLM PUTS IT TO WORK</p>
+    <div class="terminal" id="terminal">
+      <div class="term-head">
+        <span class="term-dot rd"></span><span class="term-dot yl"></span><span class="term-dot gn"></span>
+        <span class="term-title">llm — graph tools</span>
+      </div>
+      <pre class="term-body"><span id="term-text"></span><span class="cursor">▊</span></pre>
+    </div>
+  </section>
+
+  <!-- 7 · OUTRO -->
+  <section class="overlay" id="s-outro">
+    <h2 class="big-line">Grounded answers,<br/><span class="grad">from connected facts.</span></h2>
+    <p class="caption">That's a knowledge graph. Now let's see one for real.</p>
+    <div class="cta">LIVE DEMO →</div>
+  </section>
+
+  <!-- scroll spacer that defines total scroll length -->
+  <div id="scroll-space"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
