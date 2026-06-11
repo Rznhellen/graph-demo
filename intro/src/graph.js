@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 
 export const COLORS = {
-  cyan: new THREE.Color('#22d3ee'),
-  magenta: new THREE.Color('#e879f9'),
-  amber: new THREE.Color('#fbbf24'),
-  white: new THREE.Color('#eaf6ff'),
-  base: new THREE.Color('#3d7a9e'),
+  cyan: new THREE.Color('#D4845A'),
+  magenta: new THREE.Color('#7B9DB8'),
+  amber: new THREE.Color('#E8D4B0'),
+  white: new THREE.Color('#FAF6F0'),
+  base: new THREE.Color('#6B6257'),
 };
 
 const sphereGeo = new THREE.SphereGeometry(1, 24, 18);
 const connectionGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
 
-function makeLabelSprite(text, { color = '#cfe2ea', size = 46, glow = '#0b1322' } = {}) {
+function makeLabelSprite(text, { color = '#EDE8E0', size = 46, glow = '#14120F' } = {}) {
   const pad = 24;
   const cv = document.createElement('canvas');
   const ctx = cv.getContext('2d');
@@ -111,7 +111,7 @@ export class Graph {
       labelSprite: null,
     };
     if (label) {
-      edge.labelSprite = makeLabelSprite(label, { color: '#d9c8e0', size: 34 });
+      edge.labelSprite = makeLabelSprite(label, { color: '#C9B99A', size: 34 });
       this.group.add(edge.labelSprite);
     }
     this.edges.push(edge);
