@@ -302,8 +302,8 @@ function makeTerminal(el) {
     const text = chunks.map((c) => c.text.slice(0, Math.round(c.shown))).join('');
     el.innerHTML = text
       .replace(/(searchNodes|expandNeighborhood)/g, '<span class="tk-fn">$1</span>')
-      .replace(/(✓[^\n]*)/g, '<span style="color:#6fae93">$1</span>')
-      .replace(/(\$ user:[^\n]*)/g, '<span style="color:#cdab66">$1</span>');
+      .replace(/(✓[^\n]*)/g, '<span style="color:#8aa9bf">$1</span>')
+      .replace(/(\$ user:[^\n]*)/g, '<span style="color:#d4a27f">$1</span>');
   };
   return {
     chunk(tl, at, dur, text) {
